@@ -1,0 +1,125 @@
+---
+title: "Assignment 4"
+author: "Matt Koller"
+date: "11/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE) #ensure that code is shown in knitted HTML, but warnings and messages are not
+library(tidyverse)
+library(janitor)
+library(here)
+library(lubridate)
+```
+
+## I. Introduction
+
+4-5 sentence mini-intro to what this study is exploring, including basic background info about the subject, site, and study (cite as needed), and a brief overview of what's included in the exploratory report.
+
+## II. Data and Analyses
+
+3-4 sentence section brieflt describing the data, (citation and credit as needed) and providing an overview of the main analysis, statistical methods, and tools used.
+
+## III. Exploratory Findings
+
+In this section, I will wrangle, explore, and visualize my data
+
+## i. Annual juvenile hare trap counts
+
+In this section, I will count the total number of juvenile (age == "j") hare trappings *during each year* of the study, including all grid sites. I will also create a finalized data visualization of the counts by year.
+
+```{r}
+hares <- read_csv(here("data", "bonanza_hares.csv")) %>% # read in the hares data
+  mutate(date_new = mdy(date)) %>% #this creates a new column formatting the date to a date format
+  mutate(year = year(date_new))  #this creates a new column showing the year of the observation
+ 
+j_hares <- hares %>% #this creates a new dataset based on 'hares'
+  filter(age == "j") %>% 
+  group_by(year) %>% #groups the dataset by year
+  count("j") #and returns a count of how many juveniles, represented by 'j' were found each year
+```
+
+```{r}
+ggplot(data = j_hares, aes(x = year, y = n))+ #create a ggplot
+  geom_col()+ #make it a geom_col
+  labs(x = "Year", #label the x-axis
+       y = "Number of juvenile hares", #label the y-axis
+       title = "Number of Juvenile Hares found by year")+ #label the chart
+  theme_minimal() #give it a theme
+```
+
+
+```{r}
+#Get descriptive statistics
+stats <- hares %>% #this creates a new dataset based on the hares dataframe
+  filter(age == "j")
+%>% #this line filters for years WHERE JUVENILE HARES WERE CAUGHT 
+  group_by(year) %>% #groups them by year
+  summarize( #and gives the summary total count 
+    hare_total = n(), #for each juvenile hare observation in each year
+  ) 
+%>% #and, based on that summary total count
+  summarize( #gives the
+    mean_hares = mean(hare_total), #mean number of hare totals caught in each year
+    median_hares = median(hare_total), #the median number of hare totals caught in each year
+    min_hares = min(hare_total), #the lowest number of juvie hares caught in a year
+    max_hares = max(hare_total) #and the highest number of juvie hares caught in a year
+  )
+```
+
+```{r}
+stats %>% 
+  kable(col.names = c("Mean Hares Caught", "Median Hares Caught", "Min Hares Caught", "Max Hares Caught")) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+```
+
+
+Summary
+
+In this section, I wrangled the data and analyzed several trends. Based on my ggplot, the number of juvenile hares caught each year is steadily decreasing, with the totals steadily declining from 1998 to 2012. For years where juvenile hares *were* caught (excluding years where NO juvenile hares were caught), the highest number caught in a year was 126, and the lowest number was 2. The mean number of juvenile hares caught in years where they *were* caught is 31.5 hares, while the median is 18.5 hares. This tells us that there are high values of hares caught in certain years that are influencing the mean. It should be noted that this data is only for years when hares *were* trapped, and excludes years where hares were not trapped. To improve this analysis moving forward, I would standardize the number of traps that were set in each location across the year, and I would standardize the time intervals at which the traps were checked and reset. I would make this time interval fairly frequent—maybe every week or so—to ensure that the hare carcasses didn't sit unattended too long. This might cause other hares to have a negative association with the trapping location, causing them to avoid areas with traps and skewing the count, making it irrepresentative of the number of hares actually in a given location.
+
+## ii. Visualize juvenile hare weights
+
+In this section, I will create a finalized data visualization (or visualizations) in which I compare juvenile hare weights by sex and site (grid), ignoring other variables. I will include groups where these variables are not recorded ('NA'), and include finalized figure captions below my visualizations.
+
+```{r}
+hares_m <- hares %>% 
+  filter(sex == "m")
+
+hares_f <- hares %>% 
+  filter(sex == "f")
+
+hares[!is.na(hares$weight),] %>% 
+  group_by(sex) %>% 
+  summarize(
+    mean_weight = mean(weight),
+    sd_weight = sd(weight),
+    sample_size = n() %>% 
+      kbl() %>% 
+      kable_minimal()
+  )
+
+
+
+
+ggplot(data = hares, aes(x = sex, y = flipper_length_mm)) +
+  geom_beeswarm(aes(color = species)) +
+  scale_color_manual(values = c("goldenrod2","cyan4","coral")) +
+  geom_boxplot(fill = NA, width = 0.2, outlier.color = NA) +
+  stat_summary(fun=mean, 
+               geom="point", 
+               shape=20, 
+               size=4, 
+               color="black", 
+               fill="black") +
+  theme_minimal() +
+  labs(x = "\nPenguin species",
+       y = "Flipper length (mm)\n")
+  
+```
+
+
+
+
+
