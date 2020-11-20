@@ -11,19 +11,25 @@ library(tidyverse)
 library(janitor)
 library(here)
 library(lubridate)
+library(kableExtra)
+library(ggbeeswarm)
 ```
 
 ## I. Introduction
 
-4-5 sentence mini-intro to what this study is exploring, including basic background info about the subject, site, and study (cite as needed), and a brief overview of what's included in the exploratory report.
+This report analyzes data collected by the Bonanza Creek LTER, which is a part of the US Long Term Ecological Research Network. The dataframe analyzed by this report was published by Knut Kielland, F. Stuart Chapin, and Roger W. Ruess, in collaboration with the Bonanza Creek LTER.
+
+In this report, I analyze data collected in connection with the hares trapped across several sites in the Bonanza Creek LTER, which is located near Fairbanks, Alaska. In particular, I analyze information about juvenile snowshoe hares trapped from 1998-2012. 
 
 ## II. Data and Analyses
 
-3-4 sentence section brieflt describing the data, (citation and credit as needed) and providing an overview of the main analysis, statistical methods, and tools used.
+In this report, I analyze data collected by the Bonanza Creek LTER. In particular, I assess the frequency at which juvenile hares were trapped from the period 1998-2012, plotting them using a bar graph, and examining the summary statistics associated with the annual trappings. This includes the average number of hares trapped per year, and the years with the most and least hares trapped.
+
+I then assess the weight of the juvenile hares and compare their weight across both sex and gride site. This data is then displayed visually using a geom_beeswarm plot and a geom_boxplot, with several different combinations of each used to clearly outline the relationship between sex and weight. Final, I assess the normality of juvenile hare weight and juvenile hare hind leg length, perform several statistical analyses including a t-test, visualize the relationship between weight and hind leg length, and plot a linear regression curve on the same table as these two.
 
 ## III. Exploratory Findings
 
-In this section, I will wrangle, explore, and visualize my data
+In this section, I will wrangle, explore, and visualize my data.
 
 ## i. Annual juvenile hare trap counts
 
@@ -35,31 +41,31 @@ hares <- read_csv(here("data", "bonanza_hares.csv")) %>% # read in the hares dat
   mutate(year = year(date_new))  #this creates a new column showing the year of the observation
  
 j_hares <- hares %>% #this creates a new dataset based on 'hares'
-  filter(age == "j") %>% 
+  filter(age == "j") #and filters for only the variables in which juvenile hares were caught
+
+j_hares_summary <- j_hares %>% #this creates a subset of data called j_hares_summary, and
   group_by(year) %>% #groups the dataset by year
   count("j") #and returns a count of how many juveniles, represented by 'j' were found each year
 ```
 
 ```{r}
-ggplot(data = j_hares, aes(x = year, y = n))+ #create a ggplot
-  geom_col()+ #make it a geom_col
-  labs(x = "Year", #label the x-axis
-       y = "Number of juvenile hares", #label the y-axis
+ggplot(data = j_hares_summary, aes(x = year, y = n))+ #this code creates a ggplot
+  geom_col()+ #making it a geom_col
+  labs(x = "Year", #labels the x-axis
+       y = "Number of juvenile hares caught", #labels the y-axis
        title = "Number of Juvenile Hares found by year")+ #label the chart
-  theme_minimal() #give it a theme
+  theme_minimal() #gives it a theme!
 ```
 
 
-```{r}
-#Get descriptive statistics
+```{r include = FALSE}
+#This code gets us the descriptive statistics, such that we can analyze the trends relating to the annual number of hares caught.
 stats <- hares %>% #this creates a new dataset based on the hares dataframe
-  filter(age == "j")
-%>% #this line filters for years WHERE JUVENILE HARES WERE CAUGHT 
+  filter(age == "j")%>% #this line filters for years WHERE JUVENILE HARES WERE CAUGHT 
   group_by(year) %>% #groups them by year
   summarize( #and gives the summary total count 
     hare_total = n(), #for each juvenile hare observation in each year
-  ) 
-%>% #and, based on that summary total count
+  ) %>% #and, based on that summary total count
   summarize( #gives the
     mean_hares = mean(hare_total), #mean number of hare totals caught in each year
     median_hares = median(hare_total), #the median number of hare totals caught in each year
@@ -69,57 +75,204 @@ stats <- hares %>% #this creates a new dataset based on the hares dataframe
 ```
 
 ```{r}
-stats %>% 
-  kable(col.names = c("Mean Hares Caught", "Median Hares Caught", "Min Hares Caught", "Max Hares Caught")) %>% 
+stats %>% #this code takes my summary stats table
+  kable(col.names = c("Mean Hares Caught", "Median Hares Caught", "Min Hares Caught", "Max Hares Caught")) %>%  #and makes it pretty!
   kable_styling(bootstrap_options = "striped", full_width = FALSE)
 ```
 
 
 Summary
 
-In this section, I wrangled the data and analyzed several trends. Based on my ggplot, the number of juvenile hares caught each year is steadily decreasing, with the totals steadily declining from 1998 to 2012. For years where juvenile hares *were* caught (excluding years where NO juvenile hares were caught), the highest number caught in a year was 126, and the lowest number was 2. The mean number of juvenile hares caught in years where they *were* caught is 31.5 hares, while the median is 18.5 hares. This tells us that there are high values of hares caught in certain years that are influencing the mean. It should be noted that this data is only for years when hares *were* trapped, and excludes years where hares were not trapped. To improve this analysis moving forward, I would standardize the number of traps that were set in each location across the year, and I would standardize the time intervals at which the traps were checked and reset. I would make this time interval fairly frequent—maybe every week or so—to ensure that the hare carcasses didn't sit unattended too long. This might cause other hares to have a negative association with the trapping location, causing them to avoid areas with traps and skewing the count, making it irrepresentative of the number of hares actually in a given location.
+In this section, I wrangled the data and analyzed several trends. Based on my ggplot, the number of juvenile hares caught each year is steadily decreasing, with the totals steadily declining from 1998 to 2012. For years where juvenile hares *were* caught (excluding years where NO juvenile hares were caught), the highest number caught in a year was 126, and the lowest number was 2. There were two years where no juvenile hares were caught, and these years are not included in this dataset. The mean number of juvenile hares caught in years where they *were* caught is 31.5 hares, while the median is 18.5 hares. This tells us that there are high values of hares caught in certain years that are influencing the mean. It should be noted that this data is only for years when hares *were* trapped, and excludes years where hares were not trapped. To improve this analysis moving forward, I would standardize the number of traps that were set in each location across the year, and I would standardize the time intervals at which the traps were checked and reset. I would make this time interval fairly frequent—maybe every week or so—to ensure that the hare carcasses didn't sit unattended too long. This might cause other hares to have a negative association with the trapping location, causing them to avoid areas with traps and skewing the count, making it irrepresentative of the number of hares actually in a given location.
 
 ## ii. Visualize juvenile hare weights
 
 In this section, I will create a finalized data visualization (or visualizations) in which I compare juvenile hare weights by sex and site (grid), ignoring other variables. I will include groups where these variables are not recorded ('NA'), and include finalized figure captions below my visualizations.
 
 ```{r}
-hares_m <- hares %>% 
-  filter(sex == "m")
-
-hares_f <- hares %>% 
-  filter(sex == "f")
-
-hares[!is.na(hares$weight),] %>% 
-  group_by(sex) %>% 
-  summarize(
-    mean_weight = mean(weight),
-    sd_weight = sd(weight),
-    sample_size = n() %>% 
-      kbl() %>% 
-      kable_minimal()
+j_hares[!is.na(j_hares$weight),] %>% #this code takes the j_hares data (juvenile hares), including NA values for weight, and
+  group_by(sex) %>% #groups by sex
+  summarize( #summarizing
+    mean_weight = mean(weight), #the mean weight by sex,
+    sd_weight = sd(weight), #and the standard deviation of weight by sex
+    sample_size = n() %>% #counting the observations
+      kbl() %>% #and making it look...
+      kable_minimal() #pretty!
   )
 
-
-
-
-ggplot(data = hares, aes(x = sex, y = flipper_length_mm)) +
-  geom_beeswarm(aes(color = species)) +
-  scale_color_manual(values = c("goldenrod2","cyan4","coral")) +
-  geom_boxplot(fill = NA, width = 0.2, outlier.color = NA) +
-  stat_summary(fun=mean, 
+ggplot(data = j_hares, aes(x = sex, y = weight)) + #this code creates a ggplot
+  geom_beeswarm(aes(color = sex)) + #and a beeswarm style
+  scale_color_manual(values = c("goldenrod2","cyan4","coral")) + #with very cool colors
+  geom_boxplot(fill = NA, width = 0.2, outlier.color = NA) + #overlaying a boxplot
+  stat_summary(fun=mean, #and examining summary statistics with a certain aesthetic look
                geom="point", 
                shape=20, 
                size=4, 
                color="black", 
                fill="black") +
-  theme_minimal() +
-  labs(x = "\nPenguin species",
-       y = "Flipper length (mm)\n")
-  
+  theme_minimal() + # aminimal theme
+  labs(x = "Sex", #and the x axis labeled as "Sex"
+       y = "Weight") #and the y axis labeled as "Weight"
+
+ggplot(data = j_hares, aes(x = grid, y = weight)) + #this code creates a ggplot
+  geom_beeswarm(aes(color = grid)) + #and a beeswarm style
+  scale_color_manual(values = c("goldenrod2","cyan4","coral")) + #with very cool colors
+  geom_boxplot(fill = NA, width = 0.2, outlier.color = NA) + #overlaying a boxplot
+  stat_summary(fun=mean, #and examining summary statistics with a certain aesthetic look
+               geom="point", 
+               shape=20, 
+               size=4, 
+               color="black", 
+               fill="black") +
+  theme_minimal() + # aminimal theme
+  labs(x = "Grid", #and the x axis labeled as "Sex"
+       y = "Weight") #and the y axis labeled as "Weight"
+
+
+ggplot(data = j_hares, aes(x = sex, y = weight)) + #this code creates a ggplot
+  geom_beeswarm(aes(color = sex)) + #and a beeswarm style
+  scale_color_manual(values = c("goldenrod2","cyan4","coral")) + #with very cool colors
+  geom_boxplot(fill = NA, width = 0.2, outlier.color = NA) + #overlaying a boxplot
+  stat_summary(fun=mean, #and examining summary statistics with a certain aesthetic look
+               geom="point", 
+               shape=20, 
+               size=4, 
+               color="black", 
+               fill="black") +
+  theme_minimal() + # aminimal theme
+  labs(x = "Sex", #and the x axis labeled as "Sex"
+       y = "Weight")+ #and the y axis labeled as "Weight"
+  facet_wrap(~grid) #creating 3 different plots, one for each grid
+```
+
+The above graph shows us many different things. It summarizes the weight of juvenile hares by both grid site and sex, allowing us to exmaine the data from several different angles. On average, it appears that male juvenile hares weigh slightly more than female juvenile hares, a trend that holds true across all grids. Additionally, it appears as if there are also *more* male juvenile hares trapped than female juvenile hares. When examining the grid sites, the "bonrip" grid has the highest number of juvenile hares caught, while "bonbs" has the lowest number of juvenile hares caught. The juvenile hares caught in the "bonbs" grid, however appear to weigh more, on average, than the juvenile hares caught at any other grid.
+
+While the audience might need a minute or two to study these graphs, summarizing and visualizing the data in this format allows us to quickly compare the weights of juvenile hares caught by both sex and location. After toying around with several different ways of visualizing this data, including separate ggplots comparing weight by sex and comparing weight by grid, as well as a ggplot creating facet_wraps based on grid instead of sex, I landed on this presentation as the most effective in terms of visualizing data. Why? Because the different colors, denoting sex, make it easy to compare across the grids. Our eyes can quickyl track the trends based on sex by looking at the goldenrod for females, and the cyan for males (NA values are minimal and difficult to see). Comparing the grids side by side also allow us to  quickly and easily spot which grid appears to have the highest concentration of juvenile hares trapped, as well as what the weights of those hares look like.
+
+## iii. Juvenile weight comparison (male & female snowshow hares)
+
+In this section, I will further compare mean weights for the juvenile male and female snowshoe hares included in this study.
+
+```{r include = FALSE}
+#In this section, I will visually explore my data to assess its normality
+ggplot(data = j_hares, aes(weight))+ #By creating a ggplot based on juvenile hares and their weights
+  geom_histogram(bins = 10)+ #In a histogram 
+  facet_wrap(~sex) #By sex, to assess the normality of weights by sex
+
+#I will also visually explore my data using a QQ plot
+ggplot(data = j_hares, aes(sample = weight))+ #This ggplot visualizes juvenile hares and their weights
+  geom_qq() + #using a QQ plot
+  facet_wrap(~sex) #assessing the distribution by sex
+
+#Based on both of these graphs, the distribution of juvenile hare weights appears to be normally distributed.
+```
+
+After visually assessing the data using a Histogram and a QQ Plot, I can confidently say that the data appears to be normally distributed. Since it is normally distributed, I will now assess the summary statistics comparing the mean weights for juvenile male and female snowshoe hares included in this study.
+
+```{r}
+#Get descriptive statistics
+j_stats <- j_hares %>% 
+  group_by(sex) %>% 
+  summarize(
+    mean_j_hare_weight = mean(weight, na.rm = TRUE),
+    median_j_hare_weight = median(weight, na.rm = TRUE),
+    sd_j_hare_weight = sd(weight, na.rm = TRUE),
+    sample_size = n()
+  ) 
+
+#Insert table caption
+
+j_stats %>% #this code takes my summary j_stats table
+  kable(col.names = c("Sex", "Mean Weight", "Median Weight", "Standard Deviation of Weight", "Number of Hares Weighed")) %>%  #and makes it pretty!
+  kable_styling(bootstrap_options = "striped", full_width = FALSE)
+
+m_hares <- j_hares %>% 
+  filter(sex == "m") %>% 
+  pull(weight)
+
+f_hares <- j_hares %>% 
+  filter(sex == "f") %>% 
+  pull(weight)
+
+hare_t_test <- t.test(m_hares, f_hares)
+
+cohen.d(m_hares, f_hares, na.rm = TRUE)
+```
+
+## iv. Relationship between juvenile weight & hind foot length
+
+In this section, I will explore the relationship between juvenile snowshoe hare weight, and how it changes with respect to the length of the hind foot. 
+
+
+```{r include = FALSE}
+#In this section, I will assess the distribution of the juvenile hare weights to see they appear normal.
+ggplot(data = j_hares, aes(x = weight))+ #create a ggplot of the data
+  geom_histogram(bins = 10) #make it a histogram
+
+#Based on my ggplot, the data appears normal. I will now perform a QQ plot.
+
+ggplot(data = j_hares, aes(sample = weight))+
+  geom_qq() 
+
+#Based on my QQ plot, the data appears normal. I will move forward with the assumption that juvenile hare weights are normally distributed. Now I will investigate the normality of the hind foot lengths.
+
+ggplot(data = j_hares, aes(x = hindft)) + #create a ggplot of the data
+  geom_histogram(bins = 10) #make it a histogram
+
+#Based on my ggplot, the data appears normal *enough*. I will now perform a QQ plot.
+
+ggplot(data = j_hares, aes(sample = hindft)) + #create a ggplot
+  geom_qq() #make it a QQ plot
+
+#Based on my QQ plot, the data appears normal.
+```
+
+```{r}
+#In this section, I will visually explore the relationship between juvenile hare weight and hind foot length 
+ggplot(data = j_hares, aes(x = hindft, y = weight)) + #By creating a ggplot based on juvenile hares and their weights
+  geom_point() +#In a geom_point graph 
+  labs(  title = "Comparison of juvenile snowshoe hare weight and hind foot length (mm)",
+    x = "Hind foot length (mm)",
+    y = "Weight")
+
+#I will also visually explore my data using a QQ plot
+ggplot(data = j_hares, aes(sample = weight))+ #This ggplot visualizes juvenile hares and their weights
+  geom_qq() + #using a QQ plot
+  facet_wrap(~sex) #assessing the distribution by sex
+```
+
+```{r}
+#In this section, I will explore applying a linear regression to the data comparing juvenile hare weight and hind leg length.
+
+# Perform a linear regression
+hares_lm <- lm(hindft~weight, data = j_hares)
+
+# Get tidy versions of the model output to call later on in text
+hares_lm_tidy <- tidy(hares_lm)
+hares_lm_glance <- glance(hares_lm)
+
+# See model diagnostics:
+# plot(penguin_lm)
+
+# Get Pearson's r correlation
+hares_cor <- cor.test(j_hares$weight, j_hares$hindft)
+
+# Tidy version of correlation output:
+hares_cor_tidy <- tidy(hares_cor)
 ```
 
 
-
-
+```{r penguin_model_graph}
+ggplot(data = j_hares, aes(x = hindft, y = weight)) +
+  geom_point(aes(), size = 2) +
+  #scale_color_manual(values = c("goldenrod2","cyan4","coral"), 
+   #                  name = "Penguin species") +
+  #scale_shape_manual(values = c(16,17,18), 
+   #                  name = "Penguin species") +
+  geom_smooth(method = "lm", se = FALSE, color = "gray30") +
+  theme_minimal() +
+  labs(x = "Hind Foot Length (mm)",
+       y = "Weight") +
+  theme(legend.position = c(0.15, 0.7))
+```
 
